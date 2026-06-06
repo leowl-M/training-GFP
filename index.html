@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GFP — Stamp Laboratory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: { extend: { colors: { neutral: { 850: '#1f1f1f', 950: '#0a0a0a' } } } }
+      }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.2/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.5/build/mp4-muxer.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Archivo:wght@600;700;800&family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@500;700;900&family=Reenie+Beanie&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body class="bg-neutral-950 text-neutral-200 overflow-hidden text-sm font-sans antialiased selection:bg-neutral-700 flex flex-col md:flex-row h-screen">
+
+    <!-- Overlay sidebar mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-80 flex-shrink-0 bg-[#171717] border-r border-neutral-800 flex flex-col h-full z-50">
+
+        <!-- Header mobile -->
+        <div class="md:hidden flex items-center justify-between p-4 border-b border-neutral-800">
+            <h1 class="font-semibold">GFP</h1>
+            <button id="sidebarClose" class="p-2 hover:bg-neutral-800 rounded-md"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <!-- Header desktop -->
+        <div class="hidden md:block p-5 border-b border-neutral-800">
+            <h1 class="font-bold text-base">GFP</h1>
+            <p class="text-[10px] text-neutral-500 mt-1">Greetings From Potenza</p>
+        </div>
+
+        <div class="flex-1 pb-10 overflow-y-auto">
+
+            <!-- Scena -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="layers" class="w-4 h-4 text-neutral-500"></i> Scena</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-3">
+                    <div class="flex gap-2">
+                        <button id="sceneFront" class="flex-1 py-2 rounded-md text-[11px] transition-colors bg-neutral-200 text-black font-medium">Fronte</button>
+                        <button id="sceneBack" class="flex-1 py-2 rounded-md text-[11px] transition-colors border border-neutral-700 text-neutral-300 hover:bg-neutral-800">Retro</button>
+                    </div>
+                    <button id="flipBtn" class="hidden w-full flex items-center justify-center gap-2 border border-neutral-700 py-2 rounded-md text-[11px] hover:bg-neutral-800 transition-colors">
+                        <i data-lucide="rotate-3d" class="w-4 h-4"></i> Ruota 180° (flip 3D)
+                    </button>
+                </div>
+            </details>
+
+            <!-- ===== FRONTE ===== -->
+            <div class="px-5 pt-4 pb-1 flex items-center gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Fronte</span>
+                <span class="flex-1 h-px bg-neutral-800"></span>
+            </div>
+
+            <!-- Sorgente -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-neutral-500"></i> Sorgente</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-3">
+                    <div>
+                        <label class="text-[10px] text-neutral-500 block mb-1" for="potenzaSelect">Galleria Potenza</label>
+                        <select id="potenzaSelect" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                            <option value="none">Nessuna</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center justify-center h-16 bg-neutral-800 border border-neutral-700 border-dashed rounded-md cursor-pointer hover:border-neutral-500 transition-colors">
+                        <span class="text-xs text-neutral-400 flex items-center gap-2"><i data-lucide="upload" class="w-4 h-4"></i> …oppure carica la tua</span>
+                        <input id="imageUpload" type="file" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif">
+                    </label>
+                </div>
+            </details>
+
+            <!-- Immagine (solo fronte) -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="move" class="w-4 h-4 text-neutral-500"></i> Immagine <span class="text-[10px] text-neutral-600">(fronte)</span></span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-4">
+                    <p class="text-[10px] text-neutral-500 leading-snug">La foto riempie tutto il francobollo. Trascinala nel canvas per spostarla, oppure usa i cursori.</p>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="imgScale">Scala</label>
+                            <span id="val_imgScale" class="text-[10px] font-mono tabular-nums text-neutral-400">1.0×</span>
+                        </div>
+                        <input id="imgScale" type="range" min="1" max="3" value="1" step="0.05" class="w-full">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="imgOffsetX">Posizione X</label>
+                                <span id="val_imgOffsetX" class="text-[10px] font-mono tabular-nums text-neutral-400">0</span>
+                            </div>
+                            <input id="imgOffsetX" type="range" min="-1" max="1" value="0" step="0.02" class="w-full">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="imgOffsetY">Posizione Y</label>
+                                <span id="val_imgOffsetY" class="text-[10px] font-mono tabular-nums text-neutral-400">0</span>
+                            </div>
+                            <input id="imgOffsetY" type="range" min="-1" max="1" value="0" step="0.02" class="w-full">
+                        </div>
+                    </div>
+                    <!-- Testi festival: nascosti, sempre attivi (bianco + fusione differenza, fissi) -->
+                    <div class="hidden pt-3 border-t border-neutral-800 space-y-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="frontText" class="w-3.5 h-3.5 accent-neutral-200 cursor-pointer" checked>
+                            <span class="text-[11px] text-neutral-400">Testi festival (overlay)</span>
+                        </label>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="textScale">Scala testi</label>
+                                <span id="val_textScale" class="text-[10px] font-mono tabular-nums text-neutral-400">95%</span>
+                            </div>
+                            <input id="textScale" type="range" min="40" max="100" value="95" step="1" class="w-full">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-neutral-500 block mb-1" for="textColor">Colore testo</label>
+                                <select id="textColor" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                                    <option value="black">Nero</option>
+                                    <option value="white" selected>Bianco</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-neutral-500 block mb-1" for="textBlend">Fusione</label>
+                                <select id="textBlend" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                                    <option value="source-over">Normale</option>
+                                    <option value="multiply">Moltiplica</option>
+                                    <option value="darken">Scurisci</option>
+                                    <option value="screen">Scolora</option>
+                                    <option value="lighten">Schiarisci</option>
+                                    <option value="overlay">Sovrapponi</option>
+                                    <option value="difference" selected>Differenza</option>
+                                    <option value="exclusion">Esclusione</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Effetto: Displacement + Emboss + Bitonale -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-neutral-500"></i> Effetto</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-4">
+                    <p class="text-[10px] text-neutral-500 leading-snug">Displacement + Emboss + rilievo. Due toni dello stesso colore = effetto scolpito. Morbidezza 0 = bitonale netto, alta = rilievo morbido.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-neutral-500 block mb-1" for="embossMode">Modo</label>
+                            <select id="embossMode" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                                <option value="emboss" selected>Rilievo</option>
+                                <option value="deboss">Scavato</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-neutral-500 block mb-1" for="reliefSource">Applica a</label>
+                            <select id="reliefSource" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                                <option value="photo">Foto</option>
+                                <option value="map">Mappa</option>
+                                <option value="both" selected>Entrambi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <input type="hidden" id="inkColor" value="#E25938">
+                        <input type="hidden" id="paperColor" value="#F4EFE6">
+                        <div>
+                            <span class="text-[10px] text-neutral-500 block mb-1.5">Inchiostro · groove</span>
+                            <div id="inkPalette" class="color-dots" style="display:flex;gap:10px;flex-wrap:wrap" role="radiogroup" aria-label="Colore inchiostro">
+                                <span class="color-dot" role="button" tabindex="0" data-color="#FF76BF" style="display:inline-block;width:32px;height:32px;background-color:#FF76BF" aria-label="#FF76BF"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#7778F6" style="display:inline-block;width:32px;height:32px;background-color:#7778F6" aria-label="#7778F6"></span>
+                                <span class="color-dot selected" role="button" tabindex="0" data-color="#E25938" style="display:inline-block;width:32px;height:32px;background-color:#E25938" aria-label="#E25938"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#B78F75" style="display:inline-block;width:32px;height:32px;background-color:#B78F75" aria-label="#B78F75"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#F4EFE6" style="display:inline-block;width:32px;height:32px;background-color:#F4EFE6" aria-label="#F4EFE6"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-neutral-500 block mb-1.5">Carta · cresta</span>
+                            <div id="paperPalette" class="color-dots" style="display:flex;gap:10px;flex-wrap:wrap" role="radiogroup" aria-label="Colore carta">
+                                <span class="color-dot" role="button" tabindex="0" data-color="#FF76BF" style="display:inline-block;width:32px;height:32px;background-color:#FF76BF" aria-label="#FF76BF"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#7778F6" style="display:inline-block;width:32px;height:32px;background-color:#7778F6" aria-label="#7778F6"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#E25938" style="display:inline-block;width:32px;height:32px;background-color:#E25938" aria-label="#E25938"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#B78F75" style="display:inline-block;width:32px;height:32px;background-color:#B78F75" aria-label="#B78F75"></span>
+                                <span class="color-dot selected" role="button" tabindex="0" data-color="#F4EFE6" style="display:inline-block;width:32px;height:32px;background-color:#F4EFE6" aria-label="#F4EFE6"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="threshold">Soglia</label>
+                            <span id="val_threshold" class="text-[10px] font-mono tabular-nums text-neutral-400">50</span>
+                        </div>
+                        <input id="threshold" type="range" min="0" max="100" value="50" step="1" class="w-full">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="softness">Morbidezza (rilievo)</label>
+                            <span id="val_softness" class="text-[10px] font-mono tabular-nums text-neutral-400">35</span>
+                        </div>
+                        <input id="softness" type="range" min="0" max="100" value="35" step="1" class="w-full">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="emboss">Rilievo (Emboss)</label>
+                            <span id="val_emboss" class="text-[10px] font-mono tabular-nums text-neutral-400">45</span>
+                        </div>
+                        <input id="emboss" type="range" min="0" max="100" value="45" step="1" class="w-full">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="embossHi">Emboss toni chiari</label>
+                            <span id="val_embossHi" class="text-[10px] font-mono tabular-nums text-neutral-400">45</span>
+                        </div>
+                        <input id="embossHi" type="range" min="0" max="100" value="45" step="1" class="w-full">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] text-neutral-500" for="embossBias">Bias luminoso</label>
+                            <span id="val_embossBias" class="text-[10px] font-mono tabular-nums text-neutral-400">5</span>
+                        </div>
+                        <input id="embossBias" type="range" min="-50" max="50" value="5" step="1" class="w-full">
+                    </div>
+
+                    <div class="pt-1 border-t border-neutral-800 space-y-3">
+                        <div>
+                            <label class="text-[10px] text-neutral-500 block mb-1" for="mapSelect">Mappa displacement</label>
+                            <select id="mapSelect" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                                <option value="none">Nessuna</option>
+                                <option value="m8" selected>Tumact me tulez</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-[10px] text-neutral-500" for="dispX">Deform. X</label>
+                                    <span id="val_dispX" class="text-[10px] font-mono tabular-nums text-neutral-400">30</span>
+                                </div>
+                                <input id="dispX" type="range" min="-150" max="150" value="30" step="1" class="w-full">
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-[10px] text-neutral-500" for="dispY">Deform. Y</label>
+                                    <span id="val_dispY" class="text-[10px] font-mono tabular-nums text-neutral-400">30</span>
+                                </div>
+                                <input id="dispY" type="range" min="-150" max="150" value="30" step="1" class="w-full">
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-neutral-800 space-y-3">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" id="dispAnim" class="w-3.5 h-3.5 accent-neutral-200 cursor-pointer" checked>
+                                <span class="text-[11px] text-neutral-400">Movimento automatico</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-[10px] text-neutral-500" for="dispAnimAmp">Ampiezza</label>
+                                        <span id="val_dispAnimAmp" class="text-[10px] font-mono tabular-nums text-neutral-400">12</span>
+                                    </div>
+                                    <input id="dispAnimAmp" type="range" min="0" max="60" value="12" step="1" class="w-full">
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-[10px] text-neutral-500" for="dispAnimSpeed">Velocità</label>
+                                        <span id="val_dispAnimSpeed" class="text-[10px] font-mono tabular-nums text-neutral-400">1.0×</span>
+                                    </div>
+                                    <input id="dispAnimSpeed" type="range" min="0.2" max="3" value="1" step="0.1" class="w-full">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="mapStrength">Intensità rilievo mappa</label>
+                                <span id="val_mapStrength" class="text-[10px] font-mono tabular-nums text-neutral-400">100%</span>
+                            </div>
+                            <input id="mapStrength" type="range" min="0" max="300" value="100" step="5" class="w-full">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-[10px] text-neutral-500" for="mapScale">Scala mappa</label>
+                                    <span id="val_mapScale" class="text-[10px] font-mono tabular-nums text-neutral-400">1.0×</span>
+                                </div>
+                                <input id="mapScale" type="range" min="1" max="4" value="1" step="0.1" class="w-full">
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-[10px] text-neutral-500" for="mapContrast">Contrasto mappa</label>
+                                    <span id="val_mapContrast" class="text-[10px] font-mono tabular-nums text-neutral-400">100%</span>
+                                </div>
+                                <input id="mapContrast" type="range" min="0" max="300" value="100" step="5" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- ===== RETRO ===== -->
+            <div class="px-5 pt-4 pb-1 flex items-center gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Retro</span>
+                <span class="flex-1 h-px bg-neutral-800"></span>
+            </div>
+
+            <!-- Messaggio (solo retro) -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="pen-line" class="w-4 h-4 text-neutral-500"></i> Messaggio <span class="text-[10px] text-neutral-600">(retro)</span></span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-2">
+                    <p class="text-[10px] text-neutral-500 leading-snug">Testo manoscritto centrato sul retro. Va a capo da solo; usa Invio per nuove righe.</p>
+                    <textarea id="retroMsg" rows="4" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 resize-none leading-snug" placeholder="Scrivi il tuo messaggio…">Grazie Basilicata,
+sei stata una scoperta incredibile!
+Ti lasciamo la nostra traccia</textarea>
+
+                    <div class="pt-3 border-t border-neutral-800 space-y-3">
+                        <input type="hidden" id="inkColorBack" value="#E25938">
+                        <input type="hidden" id="paperColorBack" value="#F4EFE6">
+                        <div>
+                            <span class="text-[10px] text-neutral-500 block mb-1.5">Inchiostro · testo & decori</span>
+                            <div id="inkPaletteBack" class="color-dots" style="display:flex;gap:10px;flex-wrap:wrap" role="radiogroup" aria-label="Colore inchiostro retro">
+                                <span class="color-dot" role="button" tabindex="0" data-color="#FF76BF" style="display:inline-block;width:32px;height:32px;background-color:#FF76BF" aria-label="#FF76BF"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#7778F6" style="display:inline-block;width:32px;height:32px;background-color:#7778F6" aria-label="#7778F6"></span>
+                                <span class="color-dot selected" role="button" tabindex="0" data-color="#E25938" style="display:inline-block;width:32px;height:32px;background-color:#E25938" aria-label="#E25938"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#B78F75" style="display:inline-block;width:32px;height:32px;background-color:#B78F75" aria-label="#B78F75"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#F4EFE6" style="display:inline-block;width:32px;height:32px;background-color:#F4EFE6" aria-label="#F4EFE6"></span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-neutral-500 block mb-1.5">Carta · sfondo cartolina</span>
+                            <div id="paperPaletteBack" class="color-dots" style="display:flex;gap:10px;flex-wrap:wrap" role="radiogroup" aria-label="Colore carta retro">
+                                <span class="color-dot" role="button" tabindex="0" data-color="#FF76BF" style="display:inline-block;width:32px;height:32px;background-color:#FF76BF" aria-label="#FF76BF"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#7778F6" style="display:inline-block;width:32px;height:32px;background-color:#7778F6" aria-label="#7778F6"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#E25938" style="display:inline-block;width:32px;height:32px;background-color:#E25938" aria-label="#E25938"></span>
+                                <span class="color-dot" role="button" tabindex="0" data-color="#B78F75" style="display:inline-block;width:32px;height:32px;background-color:#B78F75" aria-label="#B78F75"></span>
+                                <span class="color-dot selected" role="button" tabindex="0" data-color="#F4EFE6" style="display:inline-block;width:32px;height:32px;background-color:#F4EFE6" aria-label="#F4EFE6"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-neutral-800 space-y-2">
+                        <label class="text-[10px] text-neutral-500 block mb-1" for="stickerSelect">Adesivo (retro)</label>
+                        <select id="stickerSelect" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                            <option value="none" selected>Nessuno</option>
+                        </select>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="stickerScale">Dimensione adesivo</label>
+                                <span id="val_stickerScale" class="text-[10px] font-mono tabular-nums text-neutral-400">40%</span>
+                            </div>
+                            <input id="stickerScale" type="range" min="5" max="80" value="40" step="1" class="w-full">
+                        </div>
+                        <p class="text-[10px] text-neutral-500 leading-snug">Trascinalo nel canvas (lato retro) per posizionarlo.</p>
+                    </div>
+                </div>
+            </details>
+
+            <!-- ===== GENERALE ===== -->
+            <div class="px-5 pt-4 pb-1 flex items-center gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Generale</span>
+                <span class="flex-1 h-px bg-neutral-800"></span>
+            </div>
+
+            <!-- Sfondo area -->
+            <details class="group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="layout-template" class="w-4 h-4 text-neutral-500"></i> Sfondo area</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-4">
+                    <p class="text-[10px] text-neutral-500 leading-snug">Sfondo dell'area dietro il francobollo. Tinta piatta (palette o colore libero) oppure una foto della cartella, adattata full al canvas.</p>
+                    <div>
+                        <label class="text-[10px] text-neutral-500 block mb-1" for="bgMode">Tipo sfondo</label>
+                        <select id="bgMode" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                            <option value="flat" selected>Tinta piatta</option>
+                            <option value="photo">Foto (cartella)</option>
+                        </select>
+                    </div>
+                    <div id="bgFlatRow">
+                        <input type="hidden" id="bgColor" value="#101010">
+                        <span class="text-[10px] text-neutral-500 block mb-1.5">Colore</span>
+                        <div id="bgPalette" class="color-dots" style="display:flex;gap:10px;flex-wrap:wrap" role="radiogroup" aria-label="Colore sfondo">
+                            <span class="color-dot" role="button" tabindex="0" data-color="#FF76BF" style="display:inline-block;width:32px;height:32px;background-color:#FF76BF" aria-label="#FF76BF"></span>
+                            <span class="color-dot" role="button" tabindex="0" data-color="#7778F6" style="display:inline-block;width:32px;height:32px;background-color:#7778F6" aria-label="#7778F6"></span>
+                            <span class="color-dot" role="button" tabindex="0" data-color="#E25938" style="display:inline-block;width:32px;height:32px;background-color:#E25938" aria-label="#E25938"></span>
+                            <span class="color-dot" role="button" tabindex="0" data-color="#B78F75" style="display:inline-block;width:32px;height:32px;background-color:#B78F75" aria-label="#B78F75"></span>
+                            <span class="color-dot" role="button" tabindex="0" data-color="#F4EFE6" style="display:inline-block;width:32px;height:32px;background-color:#F4EFE6" aria-label="#F4EFE6"></span>
+                            <span class="color-dot" role="button" tabindex="0" data-color="#101010" style="display:inline-block;width:32px;height:32px;background-color:#101010" aria-label="#101010"></span>
+                        </div>
+                    </div>
+                    <div id="bgPhotoRow" class="hidden">
+                        <label class="text-[10px] text-neutral-500 block mb-1" for="bgPhoto">Foto</label>
+                        <select id="bgPhoto" class="w-full bg-neutral-800 border border-neutral-700 rounded-md px-2.5 py-2 text-xs text-neutral-200 focus:border-neutral-500 cursor-pointer">
+                            <option value="bg1" selected>Texture 01</option>
+                            <option value="bg2">Texture 02</option>
+                            <option value="bg3">Texture 03</option>
+                            <option value="bg4">Texture 04</option>
+                            <option value="bg5">Texture 05</option>
+                            <option value="bg6">Texture 06</option>
+                            <option value="bg7">Texture 07</option>
+                            <option value="bg8">Texture 08</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
+
+            <!-- Bordi & Output — nascosto (valori fissi) -->
+            <details class="hidden group border-b border-neutral-800" open>
+                <summary class="flex justify-between items-center px-5 py-3.5 cursor-pointer select-none font-medium hover:bg-neutral-800/50 transition-colors">
+                    <span class="flex items-center gap-2"><i data-lucide="scissors" class="w-4 h-4 text-neutral-500"></i> Bordi & Output</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-neutral-500 transition-transform group-open:-rotate-180"></i>
+                </summary>
+                <div class="px-5 pb-4 space-y-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="showPerforations" class="w-3.5 h-3.5 accent-neutral-200 cursor-pointer">
+                        <span class="text-[11px] text-neutral-400">Bordi dentati</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="perfRadius">Denti</label>
+                                <span id="val_perfRadius" class="text-[10px] font-mono tabular-nums text-neutral-400">13px</span>
+                            </div>
+                            <input id="perfRadius" type="range" min="6" max="26" value="13" step="1" class="w-full">
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] text-neutral-500" for="perfSpacing">Passo</label>
+                                <span id="val_perfSpacing" class="text-[10px] font-mono tabular-nums text-neutral-400">34px</span>
+                            </div>
+                            <input id="perfSpacing" type="range" min="18" max="60" value="34" step="1" class="w-full">
+                        </div>
+                    </div>
+                    <button id="downloadBtn" class="w-full flex items-center justify-center gap-2 bg-neutral-200 text-black py-2 rounded-md font-medium hover:bg-white transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i> Scarica PNG 9:16
+                    </button>
+                </div>
+            </details>
+
+        </div>
+
+        <!-- Footer: azione finale -->
+        <div class="flex-shrink-0 border-t border-neutral-800 bg-[#171717] p-4 space-y-2">
+            <button id="generateBtn" class="w-full flex items-center justify-center gap-2 bg-neutral-200 text-black py-2.5 rounded-md font-medium hover:bg-white transition-colors disabled:opacity-50">
+                <i data-lucide="clapperboard" class="w-4 h-4"></i> Scarica video MP4
+            </button>
+            <p class="text-[10px] text-neutral-500 leading-snug text-center">3s fronte → flip 3D → 5s retro → flip · 920×1600</p>
+        </div>
+    </aside>
+
+    <!-- AREA PRINCIPALE -->
+    <main class="flex-1 flex flex-col min-w-0">
+        <!-- Navbar mobile -->
+        <nav class="md:hidden flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-[#171717]">
+            <span class="font-semibold text-sm">GFP</span>
+            <button id="menuToggle" class="flex items-center gap-1.5 px-2 py-1.5 hover:bg-neutral-800 rounded-md">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+                <span class="text-xs font-medium">Modifica</span>
+            </button>
+        </nav>
+
+        <div class="flex-1 flex items-center justify-center bg-neutral-950 overflow-hidden relative">
+            <div id="canvasWrap" class="relative" style="outline: 1px solid #262626;">
+                <button id="frontUploadBtn" type="button" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-2 opacity-50 hover:opacity-70 transition-opacity cursor-pointer">
+                    <i data-lucide="image-plus" class="w-7 h-7 text-neutral-800"></i>
+                    <span class="text-[11px] font-medium text-neutral-800">Carica immagine</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-3.5 right-3.5 bg-neutral-800 border border-neutral-700 text-xs px-3 py-2 rounded-md z-50 pointer-events-none"></div>
+
+    <script src="sketch.js?v=13"></script>
+</body>
+</html>
